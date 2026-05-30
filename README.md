@@ -251,7 +251,7 @@ Researched  ->  Generating  ->  Validated  ->  Pending Review  ->  Approved  -> 
 <p align="center">
   <a href="https://pushover.net"><img src="pushover-2.png" width="40%" alt="Pushover notifications for review and publish"/></a>
   &nbsp;
-  <a href="https://openai.com"><img src="OpenAix.png" width="40%" alt="OpenAI pay as you go credit balance"/></a>
+  <a href="https://openai.com"><img src="OpenAix.png" width="40%" alt="OpenAI pay-as-you-go credit balance"/></a>
 </p>
 <p align="center"><sub><i><b>It runs on coffee money.</b> The engine bills against pay-as-you-go API credit, roughly the price of a coffee per published article. Even if you publish every single day, the cost stays in coffee territory while the same output would cost a fortune in writer, editor, and designer time. Pushover pings you the moment an article is ready and again when it goes live.</i></sub></p>
 
@@ -304,13 +304,13 @@ In short: start with one blog and a few channels, then grow to as many streams a
 
 This is the complete setup, from zero to a blog that runs itself. Plan for about 30 to 60 minutes the first time. You do not need to be an n8n expert, but a little familiarity with connecting credentials helps. The fastest path is n8n Cloud.
 
-What you will connect: n8n, OpenAI, Notion, Ghost, Cloudflare R2, Buffer, Bluesky, and Pushover for alerts. You need an account and an API key or token for each. Every one has a free or pay as you go option.
+What you will connect: n8n, OpenAI, Notion, Ghost, Cloudflare R2, Buffer, Bluesky, and Pushover for alerts. You need an account and an API key or token for each. Every one has a free or pay-as-you-go option.
 
 > **Recommended, for a clean install.** Set up all your credentials in the n8n **Credentials** tab first (OpenAI, Notion, Ghost, Cloudflare R2, Buffer, Bluesky, Pushover), before you touch the nodes. Then, after importing the workflows, simply open and close each node that uses a credential so it picks up the connection. Why this order matters: if a credential is created while a node is open, that node can reset and try to pull fresh data, which leads to errors. Creating the credentials first, then opening and closing each affected node, keeps everything stable.
 
 ### Step 1. Get n8n running
 
-The simplest route is **n8n Cloud**: sign up at [n8n.io](https://n8n.io), pick a plan, and you have a working instance in a couple of minutes, with no servers to manage. If you prefer to self host, that works too, as long as your version supports the AI agent nodes used in the workflows. n8n Cloud is always up to date, so it just works.
+The simplest route is **n8n Cloud**: sign up at [n8n.io](https://n8n.io), pick a plan, and you have a working instance in a couple of minutes, with no servers to manage. If you prefer to self-host, that works too, as long as your version supports the AI agent nodes used in the workflows. n8n Cloud is always up to date, so it just works.
 
 ### Step 2. Duplicate the Notion database
 
@@ -327,7 +327,7 @@ You do not build any tables by hand. The product includes a ready made Notion da
 
 Get these ready, one account at a time:
 
-- **OpenAI**: create an API key at [platform.openai.com](https://platform.openai.com) and add pay as you go credit. The workflows use the latest GPT model for research and writing, a lighter GPT model for validation, and a GPT image model for cover images. If your account uses different model names, set them in the model nodes.
+- **OpenAI**: create an API key at [platform.openai.com](https://platform.openai.com) and add pay-as-you-go credit. The workflows use the latest GPT model for research and writing, a lighter GPT model for validation, and a GPT image model for cover images. If your account uses different model names, set them in the model nodes.
 - **Ghost**: in Ghost Admin, go to **Settings, Integrations, Add custom integration**, then copy the **Admin API key** and the **API URL**.
 - **Cloudflare R2**: create a bucket, turn on public access (a public r2.dev URL or a custom domain), then create an **S3 API token** and note the **access key, secret, and endpoint**.
 - **Buffer**: connect your social profiles, then get your **access token** and your **channel IDs**. The video walkthrough shows exactly where to find both.
@@ -359,7 +359,7 @@ This is where precision matters. Set these node by node. Nothing outside this li
 - Its Code nodes need no editing.
 
 **WF-02a Article Writer + Validator**
-- `Notion Trigger Page Updated`: change the **Database** to your own. The database ID lives directly on this trigger, not in a config node.
+- `Notion Trigger Page Updated`: change the **Database** to your own. The database ID lives directly on this trigger, not in a config node, because a Notion trigger needs the database selected at the node level to know what to watch. That is expected, not something you set up wrong.
 - `Alert Validator Fail` (Pushover): put your Pushover **User Key** in the node field.
 - Its Code nodes (Read Research Data, Parse Article, Parse Validator, Parse Repaired Article) need no editing.
 
