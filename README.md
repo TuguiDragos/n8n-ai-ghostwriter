@@ -131,7 +131,7 @@ A ten-minute average read time does not happen by accident. It happens when the 
 
 Fair question. Writing the words is one thing. Shipping a clean, accessible, search-ready page is another.
 
-Absolutely, and you do not have to take my word for it. Ghost handles the page structure through its stable Admin API, and GPT-5.5 writes the content with proper headings and structure, so what lands on the page is built correctly by default. Here is the proof: a live Google PageSpeed Insights report, run on a real article published by the Expansion Ledger agent. I could have pointed it at a hand-tuned landing page, but that would prove nothing, so this is an actual post the engine shipped, tested live by Google.
+Absolutely, and you do not have to take my word for it. Ghost handles the page structure through its stable Admin API, and the latest GPT model writes the content with proper headings and structure, so what lands on the page is built correctly by default. Here is the proof: a live Google PageSpeed Insights report, run on a real article published by the Expansion Ledger agent. I could have pointed it at a hand-tuned landing page, but that would prove nothing, so this is an actual post the engine shipped, tested live by Google.
 
 <p align="center">
   <a href="https://blog.tuguidragos.com/should-net-60-invoicing-become-a-paid-pricing-lever/"><img src="PageSpeedInsights.png" width="85%" alt="Google PageSpeed Insights report for an Expansion Ledger article: SEO 100, Accessibility 100, Best Practices 100, Performance 70"/></a>
