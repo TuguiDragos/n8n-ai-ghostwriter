@@ -292,7 +292,7 @@ In short: start with one blog and a few channels, then grow to as many streams a
 ## 📦 What is included
 
 - Five importable n8n workflows in JSON format that make up the full pipeline.
-- The complete Notion database schema.
+- A direct link to duplicate the ready-made Notion database, so you do not build any tables by hand.
 - Tuned prompts for the angle, research, writer, validator, and social agents.
 - The full setup tutorial below.
 
@@ -302,7 +302,138 @@ In short: start with one blog and a few channels, then grow to as many streams a
 
 ## 📘 Full Tutorial
 
-> The complete installation and setup guide continues below. (In progress, added next.)
+This is the complete setup, from zero to a blog that runs itself. Plan for about 30 to 60 minutes the first time. You do not need to be an n8n expert, but a little familiarity with connecting credentials helps. The fastest path is n8n Cloud.
+
+What you will connect: n8n, OpenAI, Notion, Ghost, Cloudflare R2, Buffer, Bluesky, and Pushover for alerts. You need an account and an API key or token for each. Every one has a free or pay as you go option.
+
+> **Recommended, for a clean install.** Set up all your credentials in the n8n **Credentials** tab first (OpenAI, Notion, Ghost, Cloudflare R2, Buffer, Bluesky, Pushover), before you touch the nodes. Then, after importing the workflows, simply open and close each node that uses a credential so it picks up the connection. Why this order matters: if a credential is created while a node is open, that node can reset and try to pull fresh data, which leads to errors. Creating the credentials first, then opening and closing each affected node, keeps everything stable.
+
+### Step 1. Get n8n running
+
+The simplest route is **n8n Cloud**: sign up at [n8n.io](https://n8n.io), pick a plan, and you have a working instance in a couple of minutes, with no servers to manage. If you prefer to self host, that works too, as long as your version supports the AI agent nodes used in the workflows. n8n Cloud is always up to date, so it just works.
+
+### Step 2. Duplicate the Notion database
+
+You do not build any tables by hand. The product includes a ready made Notion database with every field already set up.
+
+1. Open the template: **[Duplicate the Notion database](https://app.notion.com/p/tuguidragos/n8n-AI-Ghostwriter-370ecbf6ef7a806ca0fceac060eec349)**, then click **Duplicate** at the top right to copy it into your own workspace.
+2. Create a Notion integration at [notion.so/my-integrations](https://www.notion.so/my-integrations) and copy its **Internal Integration Token**.
+3. Open your duplicated database, click the **...** menu, go to **Connections**, and connect your integration so n8n can read and write to it.
+4. Copy the **database ID** from the database URL (the long string of characters in the link). You will paste it into the config in Step 6.
+
+### Step 3. Create your credentials
+
+> Prefer to watch first? The [video walkthrough](https://youtu.be/M84I5WAfTaU) shows how to set up every credential on screen, step by step, including the Buffer access token and channel IDs, Cloudflare R2, Notion, and Pushover.
+
+Get these ready, one account at a time:
+
+- **OpenAI**: create an API key at [platform.openai.com](https://platform.openai.com) and add pay as you go credit. The workflows use the latest GPT model for research and writing, a lighter GPT model for validation, and a GPT image model for cover images. If your account uses different model names, set them in the model nodes.
+- **Ghost**: in Ghost Admin, go to **Settings, Integrations, Add custom integration**, then copy the **Admin API key** and the **API URL**.
+- **Cloudflare R2**: create a bucket, turn on public access (a public r2.dev URL or a custom domain), then create an **S3 API token** and note the **access key, secret, and endpoint**.
+- **Buffer**: connect your social profiles, then get your **access token** and your **channel IDs**. The video walkthrough shows exactly where to find both.
+- **Bluesky**: in **Settings, App passwords**, create one, and note your **handle and app password**.
+- **Pushover** (for alerts): create an app and note the **user key and app token**. This is what the error workflow uses to ping you when an article is ready or if something fails.
+
+### Step 4. Import the five workflows
+
+In n8n, use **Import from File** and import the JSON files **in this order**: WF-01, then WF-02a, then WF-02b, then WF-03, then WF-04. Credentials do not travel inside the JSON, so you attach them in the next step.
+
+### Step 5. Attach your credentials to the nodes
+
+After import, open each workflow and connect your credential on every node that asks for one. Create the credentials first in the Credentials tab (per the note at the top), then open and close each node so it loads the connection. The credentials this system uses are:
+
+- **OpenAI**: on every model node and on the image node (WF-01 has 2 model nodes, WF-02a has 3, WF-02b has 4 model nodes plus the image node).
+- **Notion**: on every Notion node, including the Notion trigger nodes (in WF-01, WF-02a, WF-02b, and WF-03).
+- **Cloudflare R2 (S3 compatible)**: on the `Upload Image to Cloudflare R2` node in WF-02b.
+- **Pushover**: on the alert node in WF-02a, WF-02b, WF-03, and WF-04.
+
+Note: Ghost, Buffer, and Bluesky in WF-03 do **not** use n8n credentials. They are plain values inside the WF-03 `Config` node (see Step 6), so there is nothing to attach for them.
+
+### Step 6. Configure each workflow (the exact nodes)
+
+This is where precision matters. Set these node by node. Nothing outside this list needs editing.
+
+**WF-01 Research & Sourcing**
+- `Pipeline Configuration` (Set node): set `niche`, `notionDatabaseId` (your database ID), and `ghostUrl`. `recentWindowDays` is optional (default 30).
+- `Schedule Friday 1630`: default cron `30 16 * * 5` (Friday 16:30). Change it to your cadence, then read the scheduling note below.
+- Its Code nodes need no editing.
+
+**WF-02a Article Writer + Validator**
+- `Notion Trigger Page Updated`: change the **Database** to your own. The database ID lives directly on this trigger, not in a config node.
+- `Alert Validator Fail` (Pushover): put your Pushover **User Key** in the node field.
+- Its Code nodes (Read Research Data, Parse Article, Parse Validator, Parse Repaired Article) need no editing.
+
+**WF-02b Image + Social + Final**
+- `Notion Trigger Page Updated`: change the **Database** to your own.
+- `Pipeline Configuration` (Set node): set `r2BucketName` (your bucket) and `r2PublicBaseUrl` (your public R2 URL). `imageModel`, `imageSize`, `imageQuality` are optional.
+- `Parse Social` (**Code node, do not skip this**): this node has the image URL hardcoded inside the code. Find the line that builds the image link from `https://x.tuguidragos.com/` and change that base to your own public R2 URL. It is separate from Pipeline Configuration, and if you miss it the image link saved to Notion (and later used by WF-03 for the cover and for Bluesky) will still point at the wrong domain.
+- `Notify Article Ready for Review` (Pushover): put your Pushover **User Key** in the node field.
+- The other Code nodes need no editing.
+
+**WF-03 Ghost Publish + Social**
+- `Notion Trigger Approval`: change the **Database** to your own.
+- `Config` (Set node): this is the heart of WF-03. Fill every field with your own values:
+  - `ghostUrl`: your blog URL.
+  - `ghostAdminApiKey`: your Ghost Admin API key, in `id:secret` format.
+  - `ghostAuthorId`: the Ghost staff user ID to publish as (ID only, no colon).
+  - `bufferApiKey`: your Buffer access token.
+  - `facebookChannelId`, `threadsChannelId`, `xChannelId`: your Buffer channel IDs.
+  - `blueskyHandle`: your Bluesky handle.
+  - `blueskyAppPassword`: your Bluesky app password.
+- `List Ghost Users (Temp)`: a disabled helper node. To find your `ghostAuthorId`, enable it, run the workflow once, copy your user ID from the output into `Config.ghostAuthorId`, then disable it again.
+- `Notify Post Published` (Pushover): put your Pushover **User Key** in the node field.
+- The Code nodes (Set Post Context, Generate Ghost JWT, Build Buffer Payloads, and the rest) read everything from the `Config` node, so they need no editing.
+
+**WF-04 Error Handler & Notifier**
+- `Send Pushover Alert` (Pushover): put your Pushover **User Key** in the node field.
+- The Error Trigger and the Set node need no editing.
+
+**Then, for WF-01, WF-02a, WF-02b, and WF-03:** open **Settings, Error Workflow** and select **WF-04**. The imported copies point to the original error workflow, which does not exist in your instance, so re-point each one to your own WF-04 or failures will not reach you.
+
+**Scheduling note (important).** The pipeline is tuned for a weekly Friday run. WF-01 fires Friday 16:30, and the Notion triggers in WF-02a, WF-02b, and WF-03 only **poll on Friday afternoons** (their windows run Friday, roughly 16:00 to 23:00). If you move WF-01 to another day or time, widen the poll windows on the three Notion triggers to match, otherwise they will never pick up the new rows.
+
+**Models note.** If your OpenAI account does not have the exact models the nodes reference, open each model node (and the `imageModel` field in WF-02b's Pipeline Configuration) and pick a model your account supports.
+
+### Step 7. Test it end to end
+
+Run the workflows manually, in order, and watch the row move through the statuses in Notion:
+
+1. Run **WF-01**. A new row appears with Status **Researched**, plus the angle and its sources.
+2. Run **WF-02a**. The row becomes **Validated** once the draft passes the fact check. If it lands on **Failed**, the niche may be too narrow for the source gates, so broaden it.
+3. Run **WF-02b**. The row becomes **Pending Review**, with a cover image and four social drafts. If the social copy cannot pass its checks, the row is still saved with the image but marked **Needs Attention** instead, so you give the social posts a quick look.
+4. Set that row's Status to **Approved** yourself. This is the single human gate.
+5. Run **WF-03**. It publishes to Ghost, posts to Buffer and Bluesky, and flips the row to **Live**.
+
+### Step 8. Go live
+
+Once one full pass works end to end, toggle the workflows **Active**. WF-01 then runs on its schedule, and the other three pick up each status change on their next poll, which by default falls inside the Friday window set on their Notion triggers (see the scheduling note above). From here, your only job is to review and approve.
+
+### Day to day
+
+The engine drops new drafts into Notion as **Pending Review**. You skim the article, the image, and the social posts, edit anything you want directly in Notion, and flip the status to **Approved** when you are happy. Publishing and distribution happen on their own from there.
+
+### Quick troubleshooting
+
+- **No Researched row appears**: make sure your Notion integration is connected to the database, and that the database ID is correct.
+- **The validator keeps failing**: your niche is probably too narrow for the source requirements, so broaden it a little.
+- **Images do not show in Ghost**: confirm your R2 bucket allows public reads and the public URL is correct.
+- **Social posts do not go out**: re-check the Buffer token and that each profile is connected. For Bluesky, generate a fresh app password.
+- **Failures with no alert**: confirm WF-04 is set as the Error Workflow in each workflow's settings.
+
+### More detail lives inside each workflow
+
+Every workflow ships with sticky notes that explain each step and each node right on the n8n canvas. Open a workflow to read them. They sit next to the nodes they describe, they are the most granular reference, and they are refined over time, so treat them as the working source of truth alongside this guide.
+
+---
+
+## 🎥 Video walkthrough
+
+Prefer to follow along on screen? This walkthrough covers the parts most people like to see done once, including how to set up Buffer, Cloudflare R2, Notion, and Pushover.
+
+<p align="center">
+  <a href="https://youtu.be/M84I5WAfTaU"><img src="https://img.youtube.com/vi/M84I5WAfTaU/maxresdefault.jpg" width="70%" alt="Video walkthrough: setting up Buffer, Cloudflare R2, Notion, and Pushover"/></a>
+</p>
+<p align="center"><a href="https://youtu.be/M84I5WAfTaU"><b>▶ Watch the video walkthrough</b></a></p>
 
 ---
 
